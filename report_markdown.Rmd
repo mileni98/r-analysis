@@ -1,0 +1,272 @@
+---
+title: "Uticaj psihosocijalnih faktora na rizičnu voznju vozača autobusa"
+author: "Aleksa Milenović E7 2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# Uvod
+Postoje naučni dokazi koji potvrđuju da profesionalni vozači spadaju u grupu profesija koja je u velikoj meri izložena dejstvima različitih izvora stresa. Novije studije povezuju umor i stres na poslu sa nesigurnim i kontraproduktivnim radnim ponašanjem.
+
+Ovaj izveštaj ispituje povezanost između psihosocijalnih faktora, tj. uslova rada vozača BRT autobusa (eng. Bus Rapid Transport) i rizičnog ponašanja u saobraćaju. Ispitivanje zavisnosti izvršena je kreiranjem modela linearne regresije. Skup podataka napravljen je na osnovu rezultata nekoliko različitih anketa, popunjenih od strane 524 muška vozača autobusa, iz četiri transportne kompanije u Bogoti, Kolumbija.
+
+Ovaj rad, pored uvoda, sadrži još 4 celine: Opis baze podataka, Analiza podataka (u koju spadaju statistička analiza podataka, kao i njihova vizuelna reprezentacija), Regresiona analiza i Zaključak. 
+
+```{r}
+setwd("D:/Fakultet/Master studije/Semestar 2/Statistika/Projekat")
+```
+
+
+
+# Baza podatka
+
+Baza podataka sačinjena je iz 524 uzorka koji su opisani pomoću 35 obeležja (numerička i kategorička). Priložena je u vidu .sav fajla, zbog čega je potrebna instalacija *haven* biblioteke koja omogućava rad sa ovom vrstom fajlova.
+
+```{r}
+library(haven) # Haven biblioteka je neophodna za rad sa .sav fajlovima
+my_data <- read_sav("data.sav")
+```
+
+Činjenica da su obeležja izvedena iz nekoliko različitih anketa nagoveštava da će postojati i različitost u njihovom samom karakteru. Prvi deo obeležja predstavlja osnovne podatke o vozaču autobusa kao i osnovni podaci o njegovom poslu. U njih spadaju starost vozača, njegova težina, visina, indeks telesne mase, godine iskustva, broj radnih dana u nedelji, broj sati vožnje po danu, i nekoliko DA/NE pitanja koja se odnose na njegovo zdravlje, poput toga da li je pušač, da li boluje od dijabetesa itd.
+
+Drugi deo obeležja se odnosi na skorove anketa koji oslikavaju psihosocijalne faktore poput društvene podrške na poslu, tj. podrške saradnika, supervizora itd. Ključna obeležja za ovaj rad su poslednja tri obeležja - *Errors*, *Violations* i *Risk_Behaviors* koja su takođe izvedena. Obeležje *Errors* se odnosi na radnje koje vozač neadekvatno izvodi, što dovodi do neželjenih rezultata, i u ovo spada pogrešno tumačenje znakova na putu ili nepravilno upravljanje samim vozilom. S druge strane, *Violations* se odnosi na svesna kršenja saobraćajnih pravila koja regulišu bezbednost, poput prekoračenje brzine ili namernog nepoštovanja saobraćajnih znakova. Obeležje *Risk_Behaviors* izvedeno obeležje koje predstavlja zbir prethodna dva obeležja i ono kvantifikuje rizično ponašanje vozača.
+
+```{r echo = FALSE}
+v1 <- colnames(my_data)
+v2 <- c("Starost (godina)", "Sati vožnje/dan", "Radnih Dani/nedelja", "Težina (kg)", "Visina (cm)", "Indeks Telesne Mase", "Da li bolujete od dijabetesa?", "Da li patite od hipertenzije?", "Da li imate visok holesterol?", "Da li patite od kardiovaskularnih bolesti?", "Da li imate problema sa ergonomijom? ", "Da li ste pušač?", "Kojom učestalošću pijete alkohol? (0 = manje, 3 = više)", "Kojom učestalošći vežbate? (0 = manje, 3 = više)", "Veština Diskrecija", "Opseg odluke", "Kontrola na poslu", "Psihološki zahtevi", "Podrška supervizora", "Podrška saradnika", "Društvena podrška na poslu", "Napor na poslu", "Napori", "Nagrade", "E-R neravnoteža", "Psihološki poremeća", "Potreba za oporavkom", "Hroničan umor", "Pretrpljene nezgode (3 godine)", "Da li ste doživeli nesreću u poslednje 3 godine", "Da li imate napor na poslu?", "Kvadrant modela JCQ", "Greške", "Prekršaji", "Rizično ponašanje")
+v3 <- as.character(round(my_data[1, ], 2))
+
+df <- data.frame(Obelezje = v1, Opis = v2, Vrednost = v3)
+```
+
+U Tabeli 1. prikazana su sva obeležja ovog skupa podataka kao i opisi, tj objašnjenja svakog od njih. Pored ovoga prikazani su podaci prikupljeni o ispitaniku broj 1. 
+
+```{r}
+library(kableExtra)
+kable(df, col.names = c("Naziv obeležja", "Opis obeležja", "Primer vrednosti"), align = "c") %>%
+  kable_styling(full_width = TRUE)
+```
+
+<div style="text-align: center;">
+  <span style="color: gray;">Tabela 1. Prikaz skupa podataka uključujući nazive obeležja, njihova objašnjenja kao i numeričke vrednosti jednog uzorka.</span>
+</div>
+
+
+
+# Analiza podataka
+
+## Statistička analiza podataka
+
+Izlaz naredne ćelije pruža uvid u deskriptivnu statistiku obeležja gde se mogu uočiti minimalne i maksimalne vrednosti za svako od obeležja kao i Srednja vrednost, mediana i broj nedostajućih vrednosti.
+
+```{r}
+summary(my_data)
+```
+
+Prosek godina profesionalnog vozača je 40,6 sa standardnom devijacijom 7,9 pri čemu je opseg godina 20-65. Prosek vozačkog iskustva je 17,6 godina sa standardnom devijacijom 7,3.
+
+Takođe se može primetiti da postoje nedostajuće vrednosti (ukupno 1,114 od njih 18,340), što je u proseku oko 20 po svakom od obeležja. Njih je najviše za pitanje da li su pušači (139), što se može razumeti kao previše lično pitanje na koje vozači nisu želeli da se izjasne, ali i to da možda samo nisu pušači i da su podrazumevali da ih nepopunjavanje ovog polja svrstava u ovu kategoriju.
+
+```{r}
+# Broj uzoraka kod kojih postoji više od 10 nedostajućih vrednosti
+num_rows_missing_10 <- sum(rowSums(is.na(my_data)) > 10)
+print(paste("Ukupno je :", num_rows_missing_10, "ovakvih uzoraka."))
+```
+
+Od ukupno 524 ispitanika njih 279 nije popunilo bar jedno polje ankete. Najviše nepopunjenih polja za jednog uzorka je 25, pri čemu se eksperimantalno određuje da izbacivanje uoraka koji imaju više od 10 nedostajućih vrednosti neće negativno uticati na statističke osobine skupa podataka. Ovakvih uzoraka je 23 i nakon njihovog izbacivanja preostaje 501 uzorak. Na ovo je uticala i činjenca da nedostajuća vrednost jednog polja implicira nedostajuće vrednosti za polja koja su izvedena iz nje.. 
+
+```{r}
+# Uklanjanje uzoraka za koje postoji više od 10 nedostajućih vrednosti
+my_data <- my_data[rowSums(is.na(my_data)) <= 10,]
+```
+
+Ostale nedostajuće vrednosti zamenjene su medijanom vrednosti svakog od obeležja, kako srednja vrednost nema smisla za većinu kategoričkih obeležja. Jedno unapređenje zamene NA vrednosti bilo bi odrediti koja su isključivo numerička obeležja i samo njih popuniti srednjom vrednošću.
+
+```{r}
+# Funkcija koja menja NA vrednosti medijanom vrednosti obeležja
+replace_median <- function(x) { 
+  ifelse(is.na(x), median(x, na.rm = TRUE), x)
+}
+my_data[] <- lapply(my_data, replace_median)
+```
+
+
+
+## Vizuelizacija podataka
+
+U ovom delu izveštaja prikazani su grafikoni koji omogućavaju lakše razumevanje raspodele i vrednosti nekih od obeležja.
+
+### Histogrami
+
+```{r}
+hist(my_data$Age, main = "Starost vozača", xlab = "Godina", ylab = "")
+```
+
+Ispitivanje normalnosti raspodele:
+
+```{r}
+svt <- shapiro.test(my_data$Age) 
+svt
+```
+
+Ovi rezultati ukazuju na postojanje normalne raspodele za ovaj uzorak.
+
+```{r}
+hist(my_data$Hours_Day, main = "Radnih sati/dan", xlab = "Broj Sati", ylab = "")
+```
+
+```{r}
+hist(my_data$Days_Week, main = "Radnih dana/nedelja", xlab = "Godine", ylab = "")
+```
+
+```{r}
+boxplot(my_data$Hours_Day ~ my_data$Days_Week, data = my_data )
+```
+
+Uočava se postojanje neispravnih podataka kako jedna nedelja ima samo 7 dana. 
+
+```{r}
+hist(my_data$BMI, main = "Index telesne mase", xlab = "", ylab = "")
+```
+
+Ispitivanje normalnosti raspodele:
+
+```{r}
+svt <- shapiro.test(my_data$BMI) 
+svt
+```
+
+```{r}
+hist(my_data$Exercise, main = "Učestalost vežbanja", xlab = "0 = less, 3 = more", ylab = "")
+```
+
+```{r}
+hist(my_data$Alcohol, main = "Učestalost konzumiranja alkohola", xlab = "0 = less, 3 = more", ylab = "")
+```
+
+
+### Tortni grafikon
+
+```{r}
+tabela.smoking <- table(my_data[, c("Smoking")]) / nrow(my_data)
+names(tabela.smoking) <- c("Nije", "Jeste")
+pie(tabela.smoking, radius=1,main="Odnos pušača i nepušača")
+```
+
+```{r}
+tabela.accidents <- table(my_data[, c("Acc_3ys_Dic")]) / nrow(my_data)
+names(tabela.accidents) <- c("Bez", "Sa")
+pie(tabela.accidents, radius=1,main="Odnos vozača sa i bez saobračajnim nezgodama")
+```
+
+```{r}
+hist(my_data$Accidents_3y, main = "Broj saobraćajnih nezgoda", xlab = "Broj nezgoda", ylab = "")
+```
+
+
+### Korelacija između obeležja
+
+```{r}
+# Izračunanje vrednosti korelacione matrice
+cor_matrix <- cor(my_data)
+
+# Pronalaženje indeksa elemenata gde je vrednost korelacije veća od 0.7
+indices <- which(cor_matrix > 0.7, arr.ind = TRUE)
+
+for (i in 1:nrow(indices)) {
+  row_index <- indices[i, 1]
+  col_index <- indices[i, 2]
+  if (row_index < col_index) { 
+    cat(sprintf("'%s' and '%s' have correlation %.2f\n", names(my_data)[row_index], names(my_data)[col_index], cor_matrix[row_index, col_index]))
+  }
+}
+```
+
+```{r}
+# Izračunanje vrednosti korelacione matrice
+cor_matrix <- cor(my_data)
+
+# Pronalaženje indeksa elemenata gde je vrednost korelacije veća od 0.7
+indices <- which(cor_matrix > 0.7, arr.ind = TRUE)
+
+for (i in 1:nrow(indices)) {
+  row_index <- indices[i, 1]
+  col_index <- indices[i, 2]
+  if (row_index < col_index) { 
+    cat(sprintf("'%s' and '%s' have correlation %.2f\n", v2[row_index], v2[col_index], cor_matrix[row_index, col_index]))
+  }
+}
+```
+
+
+Eksperimentalno se uzima vrednost od 0.7 za korelaciju, pri čemu će ovakvih parova biti 11, međutim kako se *Risk_Behaviors* dobija sabiranjem *Errors* i *Violations* vrednosti obeležja jasno je da će korelacija biti velika te se oni neće gledati. 11 obeležja ima srednju korelaciju dok između njih 42 postoji slaba korelacija.
+
+```{r echo=FALSE}
+attach(my_data)
+
+par(mfrow=c(3,3), mar=c(4, 4, 2, 2))
+
+plot(my_data$Weight, my_data$BMI, main = "", xlab = "Weight", ylab = "BMI")
+plot(my_data$Skill_Discretion, my_data$Control, main = "", xlab = "Skill_Discretion", ylab = "Control")
+plot(my_data$Decision_Latitude, my_data$Control, main = "", xlab = "Decision_Latitude", ylab = "Control")
+
+plot(my_data$Supervisor_SS, my_data$Social_Support_SS, main = "", xlab = "Supervisor_SS", ylab = "Social_Support_SS")
+plot(my_data$Peer_SS, my_data$Social_Support_SS, main = "", xlab = "Peer_SS", ylab = "Social_Support_SS")
+plot(my_data$Demands, my_data$Job_Strain, main = "", xlab = "Demands", ylab = "Job_Strain")
+
+plot(my_data$Efforts, my_data$Imbalance, main = "", xlab = "Efforts", ylab = "Imbalance")
+plot(my_data$Rewards, my_data$Imbalance, main = "", xlab = "Rewards", ylab = "Imbalance")
+plot(my_data$Accidents_3y, my_data$Acc_3ys_Dic, main = "", xlab = "Accidents_3y", ylab = "Acc_3ys_Dic")
+```
+
+
+
+
+# Regresiona analiza podataka
+
+Model koji obuhvata sva obeležja osim traženog *Risk_Behaviors* obeležja i *Errors* i *Violations* obeležja jer oni direktno izvode njegovu vrednost.
+
+```{r}
+modelA <- lm(Risk_Behaviors ~ . - Errors - Violations, data = my_data)
+summary(modelA)
+```
+
+```{r}
+anova(modelA)
+```
+
+```{r echo=FALSE}
+layout(matrix(1:4,2,2))
+plot(modelA)
+layout(matrix(1))
+```
+
+Model koji obuhvata obeležja koja imaju male *p* vrednosti u prethodnom modelu.
+
+```{r}
+modelB <- lm(Risk_Behaviors ~ Age + Exercise + Efforts + Acc_3ys_Dic + Psych_Disturbance + Hours_Day, data = my_data)
+summary(modelB)
+```
+
+```{r}
+anova(modelB)
+```
+
+```{r echo=FALSE}
+layout(matrix(1:4,2,2))
+plot(modelB)
+layout(matrix(1))
+```
+
+
+
+# Zaključak
+
+Rezultati regresije potvrđuju zavisnost psihosocijalnih faktora na rizičnu vožnju i skor obeležja *Risk_Behaviors*. Međutim daje slabije rezultate usled manjeg opsega njegove vrednosti. Pored ovoga jedno poboljšanje bi bilo i sprovođenje kvalitetnijih testova kao i povećanje skupa ispitanika pri čemu bi se povećao uzorački skup.
+
+Podaci bi se mogli generalizovati na druge transportne sisteme zasnovane na BRT-u koji postoji u 160 gradova u 33 država. Podatke mogu koristiti drugi istraživači za analizu uslova rada BRT vozača.
