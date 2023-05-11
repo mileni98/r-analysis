@@ -4,7 +4,9 @@ This project utilizes the R programming language to conduct in-depth data analys
 
 To extract valuable insights from the data, various statistical analysis techniques such as analysis of variance, correlation, and regression analyses were used. The most significant findings from the analysis.R script are presented in the report markdown file.
 
-**To view the report in your browser, click on this link:** https://raw.githack.com/mileni98/r-analysis/main/report_markdown.html
+**To view the report in your browser, click on this link:** https://raw.githack.com/mileni98/r-analysis/main/report_markdown.html 
+
+*If the link doesn't work, try opening it in an incognito tab.*
 
 
 ## Running the project
